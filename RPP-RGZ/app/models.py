@@ -1,8 +1,23 @@
-from . import db
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
 
-class Subscription(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    amount = db.Column(db.Float, nullable=False)
-    periodicity = db.Column(db.String(50), nullable=False)
-    start_date = db.Column(db.Date, nullable=False)
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = 'users'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    subscriptions = relationship("Subscription", back_populates="user")
+
+class Subscription(Base):
+    __tablename__ = 'subscriptions'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    amount = Column(Float, nullable=False)
+    frequency = Column(String, nullable=False)  # Например, 'monthly', 'yearly'
+    start_date = Column(Date, nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    user = relationship("User", back_populates="subscriptions")

@@ -1,46 +1,56 @@
 from flask import request, jsonify
-from . import db
-from .models import Subscription
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from models import Base, User, Subscription
+
+# Настройка базы данных
+DATABASE_URL = "postgresql://username:password@localhost/dbname"
+engine = create_engine(DATABASE_URL)
+Session = sessionmaker(bind=engine)
+session = Session()
+
 
 def create_subscription():
     data = request.get_json()
+    user_id = data.get('user_id')  # Получаем user_id из запроса
     new_subscription = Subscription(
         name=data['name'],
         amount=data['amount'],
-        periodicity=data['periodicity'],
-        start_date=data['start_date']
+        frequency=data['frequency'],  # Исправлено на frequency
+        start_date=data['start_date'],
+        user_id=user_id  # Устанавливаем user_id
     )
-    db.session.add(new_subscription)
-    db.session.commit()
+    session.add(new_subscription)
+    session.commit()
     return jsonify({'message': 'Subscription created'}), 201
 
 def get_subscriptions():
-    subscriptions = Subscription.query.all()
+    subscriptions = session.query(Subscription).all()  # Используем session
     return jsonify([{
         'id': sub.id,
         'name': sub.name,
         'amount': sub.amount,
-        'periodicity': sub.periodicity,
+        'frequency': sub.frequency,  # Исправлено на frequency
         'start_date': sub.start_date
     } for sub in subscriptions])
 
 def update_subscription(subscription_id):
     data = request.get_json()
-    subscription = Subscription.query.get(subscription_id)
+    subscription = session.query(Subscription).get(subscription_id)  # Используем session
     if not subscription:
         return jsonify({'message': 'Subscription not found'}), 404
 
     subscription.amount = data.get('amount', subscription.amount)
-    subscription.periodicity = data.get('periodicity', subscription.periodicity)
+    subscription.frequency = data.get('frequency', subscription.frequency)  # Исправлено на frequency
     subscription.start_date = data.get('start_date', subscription.start_date)
-    db.session.commit()
+    session.commit()
     return jsonify({'message': 'Subscription updated'})
 
 def delete_subscription(subscription_id):
-    subscription = Subscription.query.get(subscription_id)
+    subscription = session.query(Subscription).get(subscription_id)  # Используем session
     if not subscription:
         return jsonify({'message': 'Subscription not found'}), 404
 
-    db.session.delete(subscription)
-    db.session.commit()
+    session.delete(subscription)
+    session.commit()
     return jsonify({'message': 'Subscription deleted'})
