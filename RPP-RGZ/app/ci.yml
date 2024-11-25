@@ -1,4 +1,4 @@
-name: CI
+name: CI #это в workflows на гитхабе создать
 
 on:
   push:
