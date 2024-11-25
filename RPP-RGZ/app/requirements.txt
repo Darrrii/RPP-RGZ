@@ -1,0 +1,5 @@
+flask
+flasgger
+flask-login
+psycopg2-binary
+bandit

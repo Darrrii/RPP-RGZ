@@ -1,0 +1,11 @@
+- version: 1.0
+  id: 1
+  file_path: "migrations/001_create_subscriptions_table.sql"
+
+- version: 1.1
+  id: 2
+  file_path: "migrations/002_add_periodicity_column.sql"
+
+- version: 1.2
+  id: 3
+  file_path: "migrations/003_add_start_date_column.sql"
