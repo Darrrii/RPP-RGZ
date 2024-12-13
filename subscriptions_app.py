@@ -1,11 +1,14 @@
 from flask import Flask, request, render_template, redirect, session
 import psycopg2
+import yaml
+from datetime import datetime
 from psycopg2.extras import RealDictCursor
+import os
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"
 
-# Функции для работы с базой данных
+# Функция для подключения к базе данных
 def db_connect():
     return psycopg2.connect(
         host="127.0.0.1",
@@ -15,10 +18,76 @@ def db_connect():
         password="123"
     )
 
-def db_close(cursor, connection):
-    cursor.close()
-    connection.close()
+def db_close(cur, conn):
+    """Закрывает курсор и соединение с базой данных."""
+    if cur is not None:
+        cur.close()
+    if conn is not None:
+        conn.close()
 
+def execute_sql_file(file_path, conn):
+    """Выполняет SQL-файл."""
+    with open(file_path, "r") as file:
+        sql = file.read()
+    cur = conn.cursor()
+    cur.execute(sql)
+    conn.commit()
+    cur.close()
+
+def run_migrations():
+    """Запускает миграции базы данных."""
+    conn = db_connect()
+    cur = conn.cursor()
+
+    # Создаем таблицу для логирования миграций, если её нет
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS migrations_log (
+            id SERIAL PRIMARY KEY,
+            migration_id INTEGER NOT NULL,
+            file_path VARCHAR(255) NOT NULL,
+            applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+    conn.commit()
+
+    # Загружаем changelog
+    with open("changelog.yaml", "r") as file:
+        changelog = yaml.safe_load(file)
+
+    # Получаем список выполненных миграций
+    cur.execute("SELECT migration_id, file_path FROM migrations_log")
+    applied_migrations = cur.fetchall()
+    applied_migrations_dict = {row[0]: row[1] for row in applied_migrations}
+
+    # Проверяем миграции
+    for migration in changelog["migrations"]:
+        migration_id = migration["id"]
+        file_path = migration["file_path"]
+
+        # Если миграция уже выполнена
+        if migration_id in applied_migrations_dict:
+            if applied_migrations_dict[migration_id] != file_path:
+                raise Exception(f"Несоответствие миграции {migration_id}: {file_path} не совпадает с {applied_migrations_dict[migration_id]}")
+            continue
+
+        # Выполняем миграцию
+        print(f"Применение миграции {migration_id}: {file_path}")
+        execute_sql_file(file_path, conn)
+
+        # Логируем миграцию
+        cur.execute("""
+            INSERT INTO migrations_log (migration_id, file_path)
+            VALUES (%s, %s)
+        """, (migration_id, file_path))
+        conn.commit()
+
+    # Закрываем курсор и соединение
+    db_close(cur, conn)
+
+# Запуск мигратора при старте приложения
+run_migrations()
+
+# Роуты для работы с подписками
 # Главная страница
 @app.route("/")
 def index():
