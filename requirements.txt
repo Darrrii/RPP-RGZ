@@ -1,5 +1,6 @@
 Flask
+flasgger
+flask-login
 psycopg2-binary
 PyYAML
 pytest
-bandit

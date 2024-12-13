@@ -1,0 +1,6 @@
+Flask==2.2.2
+Flask-SQLAlchemy==2.5.1
+psycopg2-binary==2.9.3
+Flask-Migrate==3.1.0
+PyYAML==6.0
+bandit==1.7.0
