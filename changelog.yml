@@ -1,0 +1,5 @@
+migrations:
+  - id: 1
+    file_path: "migrations/001_create_subscriptions_table.sql"
+  - id: 2
+    file_path: "migrations/002_add_periodicity_column.sql"
